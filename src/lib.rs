@@ -10,6 +10,7 @@
 //! ## Bit Manipulation Functions
 //! - get_bit() Returns the bit value at location index
 //! - set_bit() Sets the bit value at location index
+//! - to_bstring() converts the array into a padded binary string
 //! 
 //! ## Functions not included as they are already standard
 //! - count_ones()
