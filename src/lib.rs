@@ -23,6 +23,20 @@
 //! - to_le_bytes()
 
 pub trait BinaryArray {
+    /// Apply a mask of x number of bits starting from the LSB in-place
+    fn apply_mask_lsb(&mut self, bits: usize) -> Self;
+
+    /// Apply a mask of x number of bits starting from the MSB in-place
+    fn apply_mask_msb(&mut self, bits: usize) -> Self;
+
+    /// Apply a mask of x number of bits starting from the LSB
+    /// A mask larger than the bit size is equivalent to the bit size
+    fn create_mask_lsb(&self, bits: usize) -> Self;
+
+    /// Apply a mask of x number of bits starting from the MSB
+    /// A mask larger than the bit size is equivalent to the bit size
+    fn create_mask_msb(&self, bits: usize) -> Self;
+
     /// Retrieves the bit value from index location
     fn get_bit(&self, index: usize) -> bool;
 
@@ -34,6 +48,30 @@ pub trait BinaryArray {
 }
 
 impl BinaryArray for u8 {
+    fn apply_mask_lsb(&mut self, bits: usize) -> Self {
+        *self & self.create_mask_lsb(bits)
+    }
+
+    fn apply_mask_msb(&mut self, bits: usize) -> Self {
+        *self & self.create_mask_msb(bits)
+    }
+
+    fn create_mask_lsb(&self, bits: usize) -> Self {
+        if bits >= 8 {
+            return u8::MAX;
+        } else {
+            return !(u8::MAX << bits);
+        }
+    }
+
+    fn create_mask_msb(&self, bits: usize) -> Self {
+        if bits >= 8 {
+            return u8::MAX;
+        } else {
+            return !(u8::MAX >> bits);
+        }
+    }
+
     fn get_bit(&self, index: usize) -> bool {
         (*self & (1 << index)) != 0
     }
@@ -49,6 +87,30 @@ impl BinaryArray for u8 {
 }
 
 impl BinaryArray for u16 {
+    fn apply_mask_lsb(&mut self, bits: usize) -> Self {
+        *self & self.create_mask_lsb(bits)
+    }
+
+    fn apply_mask_msb(&mut self, bits: usize) -> Self {
+        *self & self.create_mask_msb(bits)
+    }
+
+    fn create_mask_lsb(&self, bits: usize) -> Self {
+        if bits >= 16 {
+            return u16::MAX;
+        } else {
+            return !(u16::MAX << bits);
+        }
+    }
+
+    fn create_mask_msb(&self, bits: usize) -> Self {
+        if bits >= 16 {
+            return u16::MAX;
+        } else {
+            return !(u16::MAX >> bits);
+        }
+    }
+    
     fn get_bit(&self, index: usize) -> bool {
         (*self & (1 << index)) != 0
     }
@@ -64,6 +126,30 @@ impl BinaryArray for u16 {
 }
 
 impl BinaryArray for u32 {
+    fn apply_mask_lsb(&mut self, bits: usize) -> Self {
+        *self & self.create_mask_lsb(bits)
+    }
+
+    fn apply_mask_msb(&mut self, bits: usize) -> Self {
+        *self & self.create_mask_msb(bits)
+    }
+
+    fn create_mask_lsb(&self, bits: usize) -> Self {
+        if bits >= 32 {
+            return u32::MAX;
+        } else {
+            return !(u32::MAX << bits);
+        }
+    }
+
+    fn create_mask_msb(&self, bits: usize) -> Self {
+        if bits >= 32 {
+            return u32::MAX;
+        } else {
+            return !(u32::MAX >> bits);
+        }
+    }
+
     fn get_bit(&self, index: usize) -> bool {
         (*self & (1 << index)) != 0
     }
@@ -79,6 +165,30 @@ impl BinaryArray for u32 {
 }
 
 impl BinaryArray for u64 {
+    fn apply_mask_lsb(&mut self, bits: usize) -> Self {
+        *self & self.create_mask_lsb(bits)
+    }
+
+    fn apply_mask_msb(&mut self, bits: usize) -> Self {
+        *self & self.create_mask_msb(bits)
+    }
+
+    fn create_mask_lsb(&self, bits: usize) -> Self {
+        if bits >= 64 {
+            return u64::MAX;
+        } else {
+            return !(u64::MAX << bits);
+        }
+    }
+
+    fn create_mask_msb(&self, bits: usize) -> Self {
+        if bits >= 64 {
+            return u64::MAX;
+        } else {
+            return !(u64::MAX >> bits);
+        }
+    }
+
     fn get_bit(&self, index: usize) -> bool {
         (*self & (1 << index)) != 0
     }
@@ -94,6 +204,30 @@ impl BinaryArray for u64 {
 }
 
 impl BinaryArray for u128 { 
+    fn apply_mask_lsb(&mut self, bits: usize) -> Self {
+        *self & self.create_mask_lsb(bits)
+    }
+
+    fn apply_mask_msb(&mut self, bits: usize) -> Self {
+        *self & self.create_mask_msb(bits)
+    }
+
+    fn create_mask_lsb(&self, bits: usize) -> Self {
+        if bits >= 128 {
+            return u128::MAX;
+        } else {
+            return !(u128::MAX << bits);
+        }
+    }
+
+    fn create_mask_msb(&self, bits: usize) -> Self {
+        if bits >= 128 {
+            return u128::MAX;
+        } else {
+            return !(u128::MAX >> bits);
+        }
+    }
+
     fn get_bit(&self, index: usize) -> bool {
         (*self & (1 << index)) != 0
     }
@@ -113,6 +247,30 @@ impl BinaryArray for u128 {
 /// the target system being programmed for, and have the appropriate array size
 /// selected.
 impl BinaryArray for usize {
+    fn apply_mask_lsb(&mut self, bits: usize) -> Self {
+        *self & self.create_mask_lsb(bits)
+    }
+
+    fn apply_mask_msb(&mut self, bits: usize) -> Self {
+        *self & self.create_mask_msb(bits)
+    }
+
+    fn create_mask_lsb(&self, bits: usize) -> Self {
+        if bits >= std::mem::size_of::<usize>() * 8 {
+            return usize::MAX;
+        } else {
+            return !(usize::MAX << bits);
+        }
+    }
+
+    fn create_mask_msb(&self, bits: usize) -> Self {
+        if bits >= std::mem::size_of::<usize>() * 8 {
+            return usize::MAX;
+        } else {
+            return !(usize::MAX >> bits);
+        }
+    }
+
     fn get_bit(&self, index: usize) -> bool {
         (*self & (1 << index)) != 0
     }

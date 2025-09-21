@@ -1,1 +1,0 @@
-searchState.loadedDescShard("binarray", 0, "BinArray\nRetrieves the bit value from index location\nSets the bit value at index location\nFormats the binary array as a padded string")
