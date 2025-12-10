@@ -78,7 +78,8 @@ impl BinaryArray for u8 {
 
     fn set_bit(&mut self, index: usize, value: bool) -> Self {
         let mask = 1 << index;
-        *self & !mask | (mask & (0_u8.wrapping_sub(value as u8)))
+        *self = (*self & !mask) | ((value as u8) << index);
+        *self
     }
 
     fn to_bstring(&self) -> String {
@@ -117,7 +118,8 @@ impl BinaryArray for u16 {
 
     fn set_bit(&mut self, index: usize, value: bool) -> Self {
         let mask = 1 << index;
-        *self & !mask | (mask & (0_u16.wrapping_sub(value as u16)))
+        *self = (*self & !mask) | ((value as u16) << index);
+        *self
     }
 
     fn to_bstring(&self) -> String {
@@ -156,7 +158,8 @@ impl BinaryArray for u32 {
 
     fn set_bit(&mut self, index: usize, value: bool) -> Self {
         let mask = 1 << index;
-        *self & !mask | (mask & (0_u32.wrapping_sub(value as u32)))
+        *self = (*self & !mask) | ((value as u32) << index);
+        *self
     }
 
     fn to_bstring(&self) -> String {
@@ -195,7 +198,8 @@ impl BinaryArray for u64 {
 
     fn set_bit(&mut self, index: usize, value: bool) -> Self {
         let mask = 1 << index;
-        *self & !mask | (mask & (0_u64.wrapping_sub(value as u64)))
+        *self = (*self & !mask) | ((value as u64) << index);
+        *self
     }
 
     fn to_bstring(&self) -> String {
@@ -234,7 +238,8 @@ impl BinaryArray for u128 {
 
     fn set_bit(&mut self, index: usize, value: bool) -> Self {
         let mask = 1 << index;
-        *self & !mask | (mask & (0_u128.wrapping_sub(value as u128)))
+        *self = (*self & !mask) | ((value as u128) << index);
+        *self
     }
 
     fn to_bstring(&self) -> String {
@@ -277,7 +282,8 @@ impl BinaryArray for usize {
 
     fn set_bit(&mut self, index: usize, value: bool) -> Self {
         let mask = 1 << index;
-        *self & !mask | (mask & (0_usize.wrapping_sub(value as usize)))
+        *self = (*self & !mask) | ((value as usize) << index);
+        *self
     }
 
     fn to_bstring(&self) -> String {
