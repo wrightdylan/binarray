@@ -23,6 +23,9 @@
 //! - to_le_bytes()
 
 pub trait BinaryArray {
+    /// Find the size of usize in bits
+    const BITS_IN_USIZE: usize = std::mem::size_of::<usize>() * 8;
+
     /// Apply a mask of x number of bits starting from the LSB in-place
     fn apply_mask_lsb(&mut self, bits: usize) -> Self;
 
@@ -45,6 +48,10 @@ pub trait BinaryArray {
 
     /// Formats the binary array as a padded string
     fn to_bstring(&self) -> String;
+
+    /// Converts the binary array into a vector of indices where the position
+    /// is a '1'
+    fn to_indices(&self) -> Vec<usize>;
 }
 
 impl BinaryArray for u8 {
@@ -84,6 +91,12 @@ impl BinaryArray for u8 {
 
     fn to_bstring(&self) -> String {
         format!("{:08b}", self)
+    }
+
+    fn to_indices(&self) -> Vec<usize> {
+        (0..8)
+            .filter(|&idx| self.get_bit(idx))
+            .collect()
     }
 }
 
@@ -125,6 +138,12 @@ impl BinaryArray for u16 {
     fn to_bstring(&self) -> String {
         format!("{:016b}", self)
     }
+
+    fn to_indices(&self) -> Vec<usize> {
+        (0..16)
+            .filter(|&idx| self.get_bit(idx))
+            .collect()
+    }
 }
 
 impl BinaryArray for u32 {
@@ -164,6 +183,12 @@ impl BinaryArray for u32 {
 
     fn to_bstring(&self) -> String {
         format!("{:032b}", self)
+    }
+
+    fn to_indices(&self) -> Vec<usize> {
+        (0..32)
+            .filter(|&idx| self.get_bit(idx))
+            .collect()
     }
 }
 
@@ -205,6 +230,12 @@ impl BinaryArray for u64 {
     fn to_bstring(&self) -> String {
         format!("{:064b}", self)
     }
+
+    fn to_indices(&self) -> Vec<usize> {
+        (0..64)
+            .filter(|&idx| self.get_bit(idx))
+            .collect()
+    }
 }
 
 impl BinaryArray for u128 { 
@@ -245,6 +276,12 @@ impl BinaryArray for u128 {
     fn to_bstring(&self) -> String {
         format!("{:0128b}", self)
     }
+
+    fn to_indices(&self) -> Vec<usize> {
+        (0..128)
+            .filter(|&idx| self.get_bit(idx))
+            .collect()
+    }
 }
 
 /// Ideally usize should not be used in a static binary array like this, but
@@ -261,7 +298,7 @@ impl BinaryArray for usize {
     }
 
     fn create_mask_lsb(&self, bits: usize) -> Self {
-        if bits >= std::mem::size_of::<usize>() * 8 {
+        if bits >= Self::BITS_IN_USIZE {
             return usize::MAX;
         } else {
             return !(usize::MAX << bits);
@@ -269,7 +306,7 @@ impl BinaryArray for usize {
     }
 
     fn create_mask_msb(&self, bits: usize) -> Self {
-        if bits >= std::mem::size_of::<usize>() * 8 {
+        if bits >= Self::BITS_IN_USIZE {
             return usize::MAX;
         } else {
             return !(usize::MAX >> bits);
@@ -287,7 +324,13 @@ impl BinaryArray for usize {
     }
 
     fn to_bstring(&self) -> String {
-        format!("{:0width$b}", self, width = std::mem::size_of::<usize>() * 8)
+        format!("{:0width$b}", self, width = Self::BITS_IN_USIZE)
+    }
+
+    fn to_indices(&self) -> Vec<usize> {
+        (0..Self::BITS_IN_USIZE)
+            .filter(|&idx| self.get_bit(idx))
+            .collect()
     }
 }
 
