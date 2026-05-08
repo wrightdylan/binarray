@@ -19,320 +19,212 @@
 //! - from_le_bytes()
 //! - leading_ones()
 //! - leading_zeros()
+//! - reverse_bits()
+//! - rotate_left()
+//! - rotate_right()
 //! - to_be_bytes()
 //! - to_le_bytes()
 
-pub trait BinaryArray {
-    /// Find the size of usize in bits
-    const BITS_IN_USIZE: usize = std::mem::size_of::<usize>() * 8;
+macro_rules! binary_array {
+    ($($t:ident),*) => {
+        pub trait BinaryArray {
+            /// # === Single Bit Operations ===
+            /// Functions for modifying or checking individual bits by index.
+            
+            /// Clears a bit at the index location.
+            fn clear_bit(&mut self, index: usize) -> &mut Self;
 
-    /// Apply a mask of x number of bits starting from the LSB in-place
-    fn apply_mask_lsb(&mut self, bits: usize) -> Self;
+            /// Retrieves the bit value from index location.
+            fn get_bit(&self, index: usize) -> bool;
 
-    /// Apply a mask of x number of bits starting from the MSB in-place
-    fn apply_mask_msb(&mut self, bits: usize) -> Self;
+            /// Sets the bit at the index location.
+            fn set_bit(&mut self, index: usize) -> &mut Self;
 
-    /// Apply a mask of x number of bits starting from the LSB
-    /// A mask larger than the bit size is equivalent to the bit size
-    fn create_mask_lsb(&self, bits: usize) -> Self;
+            /// Toggles the bit at the given index.
+            fn toggle_bit(&mut self, index: usize) -> &mut Self;
 
-    /// Apply a mask of x number of bits starting from the MSB
-    /// A mask larger than the bit size is equivalent to the bit size
-    fn create_mask_msb(&self, bits: usize) -> Self;
+            /// Writes the bit value at index location.
+            fn write_bit(&mut self, index: usize, value: bool) -> &mut Self;
 
-    /// Retrieves the bit value from index location
-    fn get_bit(&self, index: usize) -> bool;
+            /// # === Bitfield Operations ===
+            /// Functions for working with contiguous blocks of bits.
+            
+            /// Apply a mask of x number of bits starting from the LSB in-place.
+            fn apply_mask_lsb(&mut self, bits: usize) -> Self;
 
-    /// Sets the bit value at index location
-    fn set_bit(&mut self, index: usize, value: bool) -> Self;
+            /// Apply a mask of x number of bits starting from the MSB in-place.
+            fn apply_mask_msb(&mut self, bits: usize) -> Self;
 
-    /// Formats the binary array as a padded string
-    fn to_bstring(&self) -> String;
+            /// Apply a mask of x number of bits starting from the LSB.
+            /// A mask larger than the bit size is equivalent to the bit size.
+            fn create_mask_lsb(&self, bits: usize) -> Self;
 
-    /// Converts the binary array into a vector of indices where the position
-    /// is a '1'
-    fn to_indices(&self) -> Vec<usize>;
+            /// Apply a mask of x number of bits starting from the MSB.
+            /// A mask larger than the bit size is equivalent to the bit size.
+            fn create_mask_msb(&self, bits: usize) -> Self;
+
+            /// Zeros out a specific range.
+            fn clear_bits(&mut self, start: usize, len: usize) -> &mut Self;
+
+            /// Extracts a value from a specific range.
+            fn get_bits(&self, start: usize, len: usize) -> Self;
+
+            /// Sets all bits in a specific range.
+            fn set_bits(&mut self, start: usize, len: usize) -> &mut Self;
+
+            /// # === Bitwise Analysis ===
+            /// Functions that inspect properties of the value.
+            
+            /// Returns true if exactly one bit is set.
+            fn is_power_of_two(&self) -> bool;
+
+            /// Returns 1 if an odd number of bits are set, or 0 if even.
+            fn parity(&self) -> bool;
+
+            /// Converts the binary array into a vector of indices where the position.
+            /// is a '1'
+            fn to_indices(&self) -> Vec<usize>;
+            
+            /// === Transformation Operations ===
+            /// Functions that transform a binary array.
+            
+            /// Returns a value where only the lowest set bit remains.
+            fn isolate_lsb(&self) -> Self;
+
+            /// Clears the rightmost 1 bit.
+            fn remove_lsb(&mut self) -> &mut Self;
+
+            /// Swaps the values at two specific indices.
+            fn swap_bits(&mut self, i: usize, j: usize) -> &mut Self;
+            
+            /// # === Conversion/Formatting Operations ===
+            /// Functions that output the binary array in an alternative (e.g.
+            /// human-readable) format.
+            
+            /// Formats the binary array as a padded string.
+            fn to_bstring(&self) -> String;
+        }
+
+        $(
+            impl BinaryArray for $t {
+                // === Single Bit Operations ===
+                fn clear_bit(&mut self, index: usize) -> &mut Self {
+                    *self &= !((1 as $t) << index);
+                    self
+                }
+
+                fn get_bit(&self, index: usize) -> bool {
+                    (*self & ((1 as $t) << index)) != 0
+                }
+
+                fn set_bit(&mut self, index: usize) -> &mut Self {
+                    *self |= (1 as $t) << index;
+                    self
+                }
+
+                fn toggle_bit(&mut self, index: usize) -> &mut Self {
+                    *self ^= (1 as $t) << index;
+                    self
+                }
+
+                fn write_bit(&mut self, index: usize, value: bool) -> &mut Self {
+                    let mask = (1 as $t) << index;
+                    *self = (*self & !mask) | ((value as $t) << index);
+                    self
+                }
+
+                // === Bitfield Operations ===
+                fn apply_mask_lsb(&mut self, bits: usize) -> Self {
+                    *self & self.create_mask_lsb(bits)
+                }
+
+                fn apply_mask_msb(&mut self, bits: usize) -> Self {
+                    *self & self.create_mask_msb(bits)
+                }
+
+                fn create_mask_lsb(&self, bits: usize) -> Self {
+                    let total_bits = std::mem::size_of::<$t>() * 8;
+                    if bits >= total_bits {
+                        $t::MAX
+                    } else {
+                        !($t::MAX << bits)
+                    }
+                }
+
+                fn create_mask_msb(&self, bits: usize) -> Self {
+                    let total_bits = std::mem::size_of::<$t>() * 8;
+                    if bits >= total_bits {
+                        $t::MAX
+                    } else {
+                        !($t::MAX >> bits)
+                    }
+                }
+
+                fn clear_bits(&mut self, start: usize, len: usize) -> &mut Self {
+                    let mask = if len >= (std::mem::size_of::<$t>() * 8) { $t::MAX } else { ((1 as $t) << len) - 1 };
+                    *self &= !(mask << start);
+                    self
+                }
+
+                fn get_bits(&self, start: usize, len: usize) -> Self {
+                    let mask = if len >= (std::mem::size_of::<$t>() * 8) { $t::MAX } else { ((1 as $t) << len) - 1 };
+                    (*self >> start) & mask
+                }
+
+                fn set_bits(&mut self, start: usize, len: usize) -> &mut Self {
+                    let mask = if len >= (std::mem::size_of::<$t>() * 8) { $t::MAX } else { ((1 as $t) << len) - 1 };
+                    *self |= (mask << start);
+                    self
+                }
+
+                // === Bitwise Analysis ===
+                fn is_power_of_two(&self) -> bool {
+                    self.count_ones() == 1
+                }
+
+                fn parity(&self) -> bool {
+                    self.count_ones() % 2 != 0
+                }
+
+                fn to_indices(&self) -> Vec<usize> {
+                    let total_bits = std::mem::size_of::<$t>() * 8;
+                    (0..total_bits)
+                        .filter(|&idx| self.get_bit(idx))
+                        .collect()
+                }
+
+                // === Transformation Operations ===
+                fn isolate_lsb(&self) -> Self {
+                    *self & self.wrapping_neg()
+                }
+
+                fn remove_lsb(&mut self) -> &mut Self {
+                    if *self > 0 {
+                        *self &= self.wrapping_sub(1 as $t);
+                    }
+                    self
+                }
+
+                fn swap_bits(&mut self, i: usize, j: usize) -> &mut Self {
+                    if self.get_bit(i) != self.get_bit(j) {
+                        let mask = ((1 as $t) << i) | ((1 as $t) << j);
+                        *self ^= mask;
+                    }
+                    self
+                }
+
+                // === Conversion/Formatting Operations ===
+                fn to_bstring(&self) -> String {
+                    let total_bits = std::mem::size_of::<$t>() * 8;
+                    format!("{:0width$b}", self, width = total_bits)
+                }
+            }
+        )*
+    };
 }
 
-impl BinaryArray for u8 {
-    fn apply_mask_lsb(&mut self, bits: usize) -> Self {
-        *self & self.create_mask_lsb(bits)
-    }
-
-    fn apply_mask_msb(&mut self, bits: usize) -> Self {
-        *self & self.create_mask_msb(bits)
-    }
-
-    fn create_mask_lsb(&self, bits: usize) -> Self {
-        if bits >= 8 {
-            return u8::MAX;
-        } else {
-            return !(u8::MAX << bits);
-        }
-    }
-
-    fn create_mask_msb(&self, bits: usize) -> Self {
-        if bits >= 8 {
-            return u8::MAX;
-        } else {
-            return !(u8::MAX >> bits);
-        }
-    }
-
-    fn get_bit(&self, index: usize) -> bool {
-        (*self & (1 << index)) != 0
-    }
-
-    fn set_bit(&mut self, index: usize, value: bool) -> Self {
-        let mask = 1 << index;
-        *self = (*self & !mask) | ((value as u8) << index);
-        *self
-    }
-
-    fn to_bstring(&self) -> String {
-        format!("{:08b}", self)
-    }
-
-    fn to_indices(&self) -> Vec<usize> {
-        (0..8)
-            .filter(|&idx| self.get_bit(idx))
-            .collect()
-    }
-}
-
-impl BinaryArray for u16 {
-    fn apply_mask_lsb(&mut self, bits: usize) -> Self {
-        *self & self.create_mask_lsb(bits)
-    }
-
-    fn apply_mask_msb(&mut self, bits: usize) -> Self {
-        *self & self.create_mask_msb(bits)
-    }
-
-    fn create_mask_lsb(&self, bits: usize) -> Self {
-        if bits >= 16 {
-            return u16::MAX;
-        } else {
-            return !(u16::MAX << bits);
-        }
-    }
-
-    fn create_mask_msb(&self, bits: usize) -> Self {
-        if bits >= 16 {
-            return u16::MAX;
-        } else {
-            return !(u16::MAX >> bits);
-        }
-    }
-    
-    fn get_bit(&self, index: usize) -> bool {
-        (*self & (1 << index)) != 0
-    }
-
-    fn set_bit(&mut self, index: usize, value: bool) -> Self {
-        let mask = 1 << index;
-        *self = (*self & !mask) | ((value as u16) << index);
-        *self
-    }
-
-    fn to_bstring(&self) -> String {
-        format!("{:016b}", self)
-    }
-
-    fn to_indices(&self) -> Vec<usize> {
-        (0..16)
-            .filter(|&idx| self.get_bit(idx))
-            .collect()
-    }
-}
-
-impl BinaryArray for u32 {
-    fn apply_mask_lsb(&mut self, bits: usize) -> Self {
-        *self & self.create_mask_lsb(bits)
-    }
-
-    fn apply_mask_msb(&mut self, bits: usize) -> Self {
-        *self & self.create_mask_msb(bits)
-    }
-
-    fn create_mask_lsb(&self, bits: usize) -> Self {
-        if bits >= 32 {
-            return u32::MAX;
-        } else {
-            return !(u32::MAX << bits);
-        }
-    }
-
-    fn create_mask_msb(&self, bits: usize) -> Self {
-        if bits >= 32 {
-            return u32::MAX;
-        } else {
-            return !(u32::MAX >> bits);
-        }
-    }
-
-    fn get_bit(&self, index: usize) -> bool {
-        (*self & (1 << index)) != 0
-    }
-
-    fn set_bit(&mut self, index: usize, value: bool) -> Self {
-        let mask = 1 << index;
-        *self = (*self & !mask) | ((value as u32) << index);
-        *self
-    }
-
-    fn to_bstring(&self) -> String {
-        format!("{:032b}", self)
-    }
-
-    fn to_indices(&self) -> Vec<usize> {
-        (0..32)
-            .filter(|&idx| self.get_bit(idx))
-            .collect()
-    }
-}
-
-impl BinaryArray for u64 {
-    fn apply_mask_lsb(&mut self, bits: usize) -> Self {
-        *self & self.create_mask_lsb(bits)
-    }
-
-    fn apply_mask_msb(&mut self, bits: usize) -> Self {
-        *self & self.create_mask_msb(bits)
-    }
-
-    fn create_mask_lsb(&self, bits: usize) -> Self {
-        if bits >= 64 {
-            return u64::MAX;
-        } else {
-            return !(u64::MAX << bits);
-        }
-    }
-
-    fn create_mask_msb(&self, bits: usize) -> Self {
-        if bits >= 64 {
-            return u64::MAX;
-        } else {
-            return !(u64::MAX >> bits);
-        }
-    }
-
-    fn get_bit(&self, index: usize) -> bool {
-        (*self & (1 << index)) != 0
-    }
-
-    fn set_bit(&mut self, index: usize, value: bool) -> Self {
-        let mask = 1 << index;
-        *self = (*self & !mask) | ((value as u64) << index);
-        *self
-    }
-
-    fn to_bstring(&self) -> String {
-        format!("{:064b}", self)
-    }
-
-    fn to_indices(&self) -> Vec<usize> {
-        (0..64)
-            .filter(|&idx| self.get_bit(idx))
-            .collect()
-    }
-}
-
-impl BinaryArray for u128 { 
-    fn apply_mask_lsb(&mut self, bits: usize) -> Self {
-        *self & self.create_mask_lsb(bits)
-    }
-
-    fn apply_mask_msb(&mut self, bits: usize) -> Self {
-        *self & self.create_mask_msb(bits)
-    }
-
-    fn create_mask_lsb(&self, bits: usize) -> Self {
-        if bits >= 128 {
-            return u128::MAX;
-        } else {
-            return !(u128::MAX << bits);
-        }
-    }
-
-    fn create_mask_msb(&self, bits: usize) -> Self {
-        if bits >= 128 {
-            return u128::MAX;
-        } else {
-            return !(u128::MAX >> bits);
-        }
-    }
-
-    fn get_bit(&self, index: usize) -> bool {
-        (*self & (1 << index)) != 0
-    }
-
-    fn set_bit(&mut self, index: usize, value: bool) -> Self {
-        let mask = 1 << index;
-        *self = (*self & !mask) | ((value as u128) << index);
-        *self
-    }
-
-    fn to_bstring(&self) -> String {
-        format!("{:0128b}", self)
-    }
-
-    fn to_indices(&self) -> Vec<usize> {
-        (0..128)
-            .filter(|&idx| self.get_bit(idx))
-            .collect()
-    }
-}
-
-/// Ideally usize should not be used in a static binary array like this, but
-/// was included anyway for completeness. One should know the architecture of
-/// the target system being programmed for, and have the appropriate array size
-/// selected.
-impl BinaryArray for usize {
-    fn apply_mask_lsb(&mut self, bits: usize) -> Self {
-        *self & self.create_mask_lsb(bits)
-    }
-
-    fn apply_mask_msb(&mut self, bits: usize) -> Self {
-        *self & self.create_mask_msb(bits)
-    }
-
-    fn create_mask_lsb(&self, bits: usize) -> Self {
-        if bits >= Self::BITS_IN_USIZE {
-            return usize::MAX;
-        } else {
-            return !(usize::MAX << bits);
-        }
-    }
-
-    fn create_mask_msb(&self, bits: usize) -> Self {
-        if bits >= Self::BITS_IN_USIZE {
-            return usize::MAX;
-        } else {
-            return !(usize::MAX >> bits);
-        }
-    }
-
-    fn get_bit(&self, index: usize) -> bool {
-        (*self & (1 << index)) != 0
-    }
-
-    fn set_bit(&mut self, index: usize, value: bool) -> Self {
-        let mask = 1 << index;
-        *self = (*self & !mask) | ((value as usize) << index);
-        *self
-    }
-
-    fn to_bstring(&self) -> String {
-        format!("{:0width$b}", self, width = Self::BITS_IN_USIZE)
-    }
-
-    fn to_indices(&self) -> Vec<usize> {
-        (0..Self::BITS_IN_USIZE)
-            .filter(|&idx| self.get_bit(idx))
-            .collect()
-    }
-}
+// Call the macro once to generate the trait and all implementations
+binary_array!(u8, u16, u32, u64, u128, usize);
 
 #[cfg(test)]
 mod tests {
@@ -346,15 +238,15 @@ mod tests {
     }
 
     #[test]
-    fn test_set_bit1() {
+    fn test_write_bit1() {
         let mut test_num: u8 = 0;
-        assert_eq!(test_num.set_bit(2, true), 4);
+        assert_eq!(*test_num.write_bit(2, true), 4);
     }
 
     #[test]
-    fn test_set_bit2() {
+    fn test_write_bit2() {
         let mut test_num: u8 = 6;
-        assert_eq!(test_num.set_bit(1, false), 4);
+        assert_eq!(*test_num.write_bit(1, false), 4);
     }
 
     #[test]
