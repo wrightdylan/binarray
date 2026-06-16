@@ -75,15 +75,33 @@ macro_rules! binary_array {
             /// # === Bitwise Analysis ===
             /// Functions that inspect properties of the value.
             
+            /// Converts the binary array into an iterator of indices where the position.
+            /// is a '1'
+            fn bit_indices(&self) -> BitIndicesIter<Self> where Self: Sized + Copy;
+
+            /// Returns the index of the first set bit (if any)
+            fn first_set_bit(&self) -> Option<usize>;
+            
             /// Returns true if exactly one bit is set.
             fn is_power_of_two(&self) -> bool;
+
+            /// Returns the index of the last set bit (if any)
+            fn last_set_bit(&self) -> Option<usize>;
+
+            /// Returns the index of the first '1' in a contiguous run starting from the MSB.
+            /// u8: 0b11101000 -> Some(5)
+            fn leading_run_end_index(&self) -> Option<usize>;
 
             /// Returns 1 if an odd number of bits are set, or 0 if even.
             fn parity(&self) -> bool;
 
             /// Converts the binary array into a vector of indices where the position.
-            /// is a '1'
+            /// is a '1'. Updated to be a bit more performative.
             fn to_indices(&self) -> Vec<usize>;
+
+            /// Returns the index of the last '1' in a contiguous run starting from index 0.
+            /// 0b10111 -> Some(2)
+            fn trailing_run_end_index(&self) -> Option<usize>;
             
             /// === Transformation Operations ===
             /// Functions that transform a binary array.
@@ -178,8 +196,39 @@ macro_rules! binary_array {
                 }
 
                 // === Bitwise Analysis ===
+                fn bit_indices(&self) -> BitIndicesIter<$t> {
+                    BitIndicesIter { val: *self }
+                }
+
+                fn first_set_bit(&self) -> Option<usize> {
+                    if *self == 0 {
+                        None
+                    } else {
+                        Some(self.trailing_zeros() as usize)
+                    }
+                }
+
                 fn is_power_of_two(&self) -> bool {
                     self.count_ones() == 1
+                }
+
+                fn last_set_bit(&self) -> Option<usize> {
+                    if *self == 0 {
+                        None
+                    } else {
+                        let total_bits = (std::mem::size_of::<$t>() * 8) as u32;
+                        Some((total_bits - self.leading_zeros()) as usize)
+                    }
+                }
+
+                fn leading_run_end_index(&self) -> Option<usize> {
+                    let count = self.leading_ones() as usize;
+                    if count == 0 {
+                        None
+                    } else {
+                        let total_bits = std::mem::size_of::<$t>() * 8;
+                        Some(total_bits - count)
+                    }
                 }
 
                 fn parity(&self) -> bool {
@@ -187,11 +236,17 @@ macro_rules! binary_array {
                 }
 
                 fn to_indices(&self) -> Vec<usize> {
-                    let total_bits = std::mem::size_of::<$t>() * 8;
-                    (0..total_bits)
-                        .filter(|&idx| self.get_bit(idx))
-                        .collect()
+                    self.bit_indices().collect()
                 }
+
+                fn trailing_run_end_index(&self) -> Option<usize> {
+                    let count = self.trailing_ones() as usize;
+                    if count == 0 {
+                        None
+                    } else {
+                        Some(count - 1)
+                    }
+                }                
 
                 // === Transformation Operations ===
                 fn isolate_lsb(&self) -> Self {
@@ -219,8 +274,27 @@ macro_rules! binary_array {
                     format!("{:0width$b}", self, width = total_bits)
                 }
             }
+
+            impl Iterator for BitIndicesIter<$t> {
+                type Item = usize;
+                
+                #[inline]
+                fn next(&mut self) -> Option<Self::Item> {
+                    if self.val == 0 {
+                        None
+                    } else {
+                        let index = self.val.trailing_zeros() as usize;
+                        self.val &= self.val.wrapping_sub(1);
+                        Some(index)
+                    }
+                }
+            }
         )*
     };
+}
+
+pub struct BitIndicesIter<T> {
+    val: T,
 }
 
 // Call the macro once to generate the trait and all implementations
